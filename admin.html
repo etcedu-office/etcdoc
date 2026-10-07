@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>หลังบ้าน — ระบบสารบรรณอิเล็กทรอนิกส์</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;font-family:'Sarabun',sans-serif}
+body{margin:0;background:#f4f6fa;color:#1f2937}
+#loginBox{max-width:380px;margin:80px auto;background:#fff;border-radius:14px;padding:26px;box-shadow:0 4px 16px rgba(0,0,0,.12);border-top:5px solid #d4a017}
+label{display:block;font-size:14px;font-weight:600;margin:10px 0 4px}
+input,select,textarea{width:100%;padding:9px 11px;border:1px solid #cbd5e1;border-radius:8px;font-size:15px;font-family:inherit}
+textarea{min-height:70px}
+.btn{background:#1d4ed8;color:#fff;border:none;padding:9px 16px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600}
+.btn.gold{background:#d4a017;color:#1f2937}.btn.gray{background:#64748b}.btn.red{background:#dc2626}.btn.green{background:#059669}
+.btn.sm{padding:5px 10px;font-size:13px;margin:2px}
+header{background:linear-gradient(135deg,#0f2a5f,#1d4ed8);color:#fff;padding:10px 18px;border-bottom:4px solid #d4a017;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+header b{font-size:17px}header .u{margin-left:auto;font-size:14px}
+.wrap{display:flex;min-height:calc(100vh - 62px)}
+aside{width:225px;background:#0f2a5f;flex-shrink:0}
+aside button{display:block;width:100%;text-align:left;padding:11px 15px;background:none;border:none;border-left:4px solid transparent;color:#dbe2ef;cursor:pointer;font-size:14.5px;font-family:inherit}
+aside button.act{background:#1d4ed8;border-left-color:#d4a017;color:#fff;font-weight:700}
+main{flex:1;padding:16px;overflow:auto}
+.card{background:#fff;border-radius:12px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,.07);margin-bottom:14px}
+h2{margin:0 0 12px;color:#0f2a5f;font-size:19px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{background:#0f2a5f;color:#fff;padding:8px 6px;text-align:left;white-space:nowrap}
+td{padding:7px 6px;border-bottom:1px solid #e2e8f0;vertical-align:top}
+tr:hover td{background:#f0f5ff}
+.badge{display:inline-block;padding:2px 9px;border-radius:99px;font-size:12.5px;font-weight:600;white-space:nowrap}
+.b-submitted{background:#dbeafe;color:#1d4ed8}.b-needMoreInfo,.b-returned{background:#fef3c7;color:#92400e}
+.b-rejected,.b-cancelled{background:#fee2e2;color:#b91c1c}.b-approved,.b-numbered,.b-generated,.b-closed{background:#d1fae5;color:#047857}
+.stat{display:inline-block;background:#fff;border-radius:12px;padding:14px 20px;margin:0 10px 10px 0;box-shadow:0 2px 8px rgba(0,0,0,.08);text-align:center}
+.stat b{display:block;font-size:26px;color:#0f2a5f}
+#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#0f2a5f;color:#fff;padding:11px 20px;border-radius:9px;display:none;z-index:99;max-width:92%}
+#modal{position:fixed;inset:0;background:rgba(15,23,42,.55);display:none;align-items:flex-start;justify-content:center;z-index:50;overflow:auto;padding:30px 10px}
+#modal .box{background:#fff;border-radius:12px;padding:20px;max-width:560px;width:100%}
+.err{color:#b91c1c;font-size:13.5px;margin-top:6px}
+.tl{list-style:none;padding:0}.tl li{border-left:3px solid #d4a017;margin:0 0 4px 6px;padding:4px 0 4px 12px;font-size:14px}
+@media(max-width:760px){.wrap{flex-direction:column}aside{width:100%;display:flex;overflow-x:auto}aside button{white-space:nowrap;border-left:none;border-bottom:4px solid transparent}aside button.act{border-bottom-color:#d4a017}}
+</style>
+</head>
+<body>
+<div id="loginBox">
+  <h2 style="margin:0 0 6px;color:#0f2a5f">🔐 เข้าสู่ระบบหลังบ้าน</h2>
+  <p style="font-size:13px;color:#64748b;margin:0 0 8px">ระบบสารบรรณอิเล็กทรอนิกส์</p>
+  <label>อีเมล</label><input id="lEmail" type="email">
+  <label>รหัสผ่าน</label><input id="lPass" type="password">
+  <div id="lMsg" class="err"></div>
+  <button class="btn" style="width:100%;margin-top:14px" onclick="doLogin()">เข้าสู่ระบบ</button>
+</div>
+<div id="app" style="display:none">
+  <header><b>⚙️ หลังบ้านสารบรรณอิเล็กทรอนิกส์</b><span class="u" id="uInfo"></span></header>
+  <div class="wrap">
+    <aside id="menu"></aside>
+    <main>
+      <section id="s-dash" class="sec"><div class="card" id="dashBox"></div></section>
+      <section id="s-queue" class="sec" style="display:none"><div class="card"><h2>คิวงานของฉัน</h2><div id="queueBox"></div></div></section>
+      <section id="s-reqs" class="sec" style="display:none"><div class="card"><h2>คำร้องทั้งหมด</h2>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+        <select id="fStatus" style="width:auto"><option value="">ทุกสถานะ</option></select>
+        <input id="fQ" placeholder="ค้นหา..." style="width:auto;flex:1;min-width:160px">
+        <button class="btn sm" onclick="loadReqs()">ค้นหา</button></div><div id="reqsBox"></div></div></section>
+      <section id="s-detail" class="sec" style="display:none"><div id="detailBox"></div></section>
+      <section id="s-tbl" class="sec" style="display:none"><div class="card"><h2 id="tblTitle"></h2>
+        <div id="tblExtra" style="margin-bottom:10px"></div><div id="tblBox"></div></div></section>
+      <section id="s-settings" class="sec" style="display:none"><div class="card" id="setBox"></div></section>
+    </main>
+  </div>
+</div>
+<div id="modal" onclick="if(event.target===this)closeModal()"><div class="box" id="modalBox"></div></div>
+<div id="toast"></div>
+<script>
+const API_URL='https://script.google.com/macros/s/AKfycbxQX2ug5VErQGdW6ZzBFPfJxFa-o3KaaaNbw6700x4EZpos4SrsFt0A4AV5E-Gv6ioA/exec';
+const S_LABEL={draft:'ร่าง',submitted:'รอตรวจสอบ',needMoreInfo:'รอข้อมูลเพิ่มเติม',returned:'ส่งกลับแก้ไข',rejected:'ไม่อนุมัติ',approved:'อนุมัติ',numbered:'จ่ายเลขแล้ว',generated:'ออกเอกสารแล้ว',closed:'ปิดงาน',cancelled:'ยกเลิก'};
+const ROLE_L={admin:'ผู้ดูแลระบบ',registrar:'สารบรรณ',deptHead:'หัวหน้าภาควิชา',dean:'คณบดี/รองฯ',staff:'บุคลากร',member:'สมาชิก'};
+let TOKEN=localStorage.getItem('atok')||'',ME=null,CUR='dash';
+const $=id=>document.getElementById(id);
+async function api(p){p.token=TOKEN;const r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(p)});return r.json();}
+function toast(m,ok=true){const t=$('toast');t.textContent=m;t.style.display='block';t.style.background=ok?'#0f2a5f':'#b91c1c';setTimeout(()=>t.style.display='none',3800);}
+function badge(s){return '<span class="badge b-'+s+'">'+(S_LABEL[s]||s)+'</span>';}
+function modal(html){$('modalBox').innerHTML=html;$('modal').style.display='flex';}
+function closeModal(){$('modal').style.display='none';}
+function fileB64(f){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(',')[1]);r.onerror=rej;r.readAsDataURL(f);});}
+
+async function doLogin(){
+  $('lMsg').textContent='';
+  const r=await api({action:'login',email:$('lEmail').value.trim(),password:$('lPass').value});
+  if(!r.ok){$('lMsg').textContent=r.message;return;}
+  TOKEN=r.data.token;localStorage.setItem('atok',TOKEN);ME=r.data;
+  if(r.data.mustChangePassword){const np=prompt('รหัสผ่านชั่วคราว — ตั้งรหัสใหม่ (≥8 ตัวอักษร):');
+    if(np&&np.length>=8){const c=await api({action:'changePassword',oldPassword:$('lPass').value,newPassword:np});toast(c.message,!!c.ok);}}
+  enterApp();
+}
+function enterApp(){
+  $('loginBox').style.display='none';$('app').style.display='block';
+  $('uInfo').textContent=ME.name+' ('+ROLE_L[ME.role]+')';
+  buildMenu();go(ME.role==='admin'?'dash':'queue');
+}
+function buildMenu(){
+  const m=$('menu');m.innerHTML='';
+  const items=[['dash','📊 Dashboard'],['queue','📥 คิวงานของฉัน'],['reqs','🗂️ คำร้องทั้งหมด']];
+  if(['admin','registrar'].includes(ME.role))items.push(['tbl:docnumbers','📚 ทะเบียนส่ง']);
+  if(ME.role==='admin')items.push(['tbl:requesttypes','🧩 แบบฟอร์ม'],['tbl:doctemplates','📄 เทมเพลตเอกสาร'],['tbl:signatories','✍️ ผู้ลงนาม'],['tbl:units','🏛️ หน่วยงาน'],['tbl:users','👥 ผู้ใช้'],['settings','⚙️ ตั้งค่า'],['tbl:auditlog','🔒 Audit Log']);
+  items.forEach(([k,t])=>{const b=document.createElement('button');b.textContent=t;b.dataset.k=k;b.onclick=()=>go(k);m.appendChild(b);});
+}
+function go(k){
+  CUR=k;document.querySelectorAll('#menu button').forEach(b=>b.classList.toggle('act',b.dataset.k===k));
+  document.querySelectorAll('.sec').forEach(s=>s.style.display='none');
+  if(k==='dash'){$('s-dash').style.display='block';loadDash();}
+  else if(k==='queue'){$('s-queue').style.display='block';loadQueue();}
+  else if(k==='reqs'){$('s-reqs').style.display='block';loadReqs();}
+  else if(k==='settings'){$('s-settings').style.display='block';loadSettings();}
+  else if(k.startsWith('tbl:')){$('s-tbl').style.display='block';loadTable(k.slice(4));}
+}
+async function loadDash(){
+  const r=await api({action:'dashboardStats'});
+  if(!r.ok){$('dashBox').innerHTML=r.message;return;}
+  const d=r.data;let h='<h2>ภาพรวม</h2><div>';
+  h+='<div class="stat"><b>'+d.total+'</b>คำร้องทั้งหมด</div>';
+  Object.keys(d.byStatus).forEach(k=>{if(d.byStatus[k])h+='<div class="stat"><b>'+d.byStatus[k]+'</b>'+(S_LABEL[k]||k)+'</div>';});
+  if(d.overdue)h+='<div class="stat"><b style="color:#b91c1c">'+d.overdue+'</b>งานค้างเกิน SLA</div>';
+  h+='</div>';
+  $('dashBox').innerHTML=h;
+}
+function reqRow(q){
+  return '<tr onclick="openDetail(\''+q.requestNo+'\')" style="cursor:pointer"><td><b>'+q.requestNo+'</b></td><td>'+q.subject+'</td><td>'+q.requesterName+'</td><td>'+badge(q.status)+'</td><td>'+(q.docNumber||'-')+'</td><td>'+(q.submittedAt||'')+'</td></tr>';
+}
+const Q_STATUSES={deptHead:['submitted','needMoreInfo','returned'],dean:['submitted'],registrar:['approved','numbered'],admin:['submitted','approved','numbered']};
+async function loadQueue(){
+  const sts=Q_STATUSES[ME.role]||[];let h='<table><tr><th>เลขคำร้อง</th><th>เรื่อง</th><th>ผู้ยื่น</th><th>สถานะ</th><th>เลขที่หนังสือ</th><th>วันที่</th></tr>';
+  for(const st of sts){const r=await api({action:'listRequests',status:st});if(r.ok)r.data.forEach(q=>h+=reqRow(q));}
+  $('queueBox').innerHTML=h+'</table>';
+}
+async function loadReqs(){
+  Object.keys(S_LABEL).forEach(k=>$('fStatus').add(new Option(S_LABEL[k],k)));
+  const r=await api({action:'listRequests',status:$('fStatus').value,q:$('fQ').value});
+  let h='<table><tr><th>เลขคำร้อง</th><th>เรื่อง</th><th>ผู้ยื่น</th><th>สถานะ</th><th>เลขที่หนังสือ</th><th>วันที่</th></tr>';
+  if(r.ok)r.data.forEach(q=>h+=reqRow(q));
+  $('reqsBox').innerHTML=h+'</table>';
+}
+async function openDetail(no){
+  const r=await api({action:'getRequest',requestNo:no}),h=await api({action:'getHistory',requestNo:no});
+  if(!r.ok){toast(r.message,false);return;}
+  const d=r.data;let frows='';
+  if(d.formData&&typeof d.formData==='object')Object.keys(d.formData).forEach(k=>{if(d.formData[k])frows+='<tr><td style="width:180px;color:#64748b">'+k+'</td><td>'+d.formData[k]+'</td></tr>';});
+  let acts='';
+  if(['deptHead','dean','admin'].includes(ME.role)&&d.status==='submitted')
+    acts+='<button class="btn green sm" onclick="actStatus(\''+no+'\',\'approved\')">✓ อนุมัติ</button> '+
+      '<button class="btn gold sm" onclick="actStatus(\''+no+'\',\'needMoreInfo\')">ขอข้อมูลเพิ่ม</button> '+
+      '<button class="btn gold sm" onclick="actStatus(\''+no+'\',\'returned\')">ส่งกลับแก้ไข</button> '+
+      '<button class="btn red sm" onclick="actStatus(\''+no+'\',\'rejected\')">ไม่อนุมัติ</button>';
+  if(['registrar','admin'].includes(ME.role)&&d.status==='approved')
+    acts+='<button class="btn sm" onclick="issueNo(\''+no+'\')">🔢 จ่ายเลขที่หนังสือ</button>';
+  if(['registrar','admin'].includes(ME.role)&&d.status==='numbered')
+    acts+='<button class="btn sm" onclick="genDoc(\''+no+'\')">📤 ออกเอกสาร (PDF+Word)</button>';
+  if(['registrar','admin'].includes(ME.role)&&d.status==='generated')
+    acts+='<button class="btn gray sm" onclick="addFinal(\''+no+'\')">📎 แนบไฟล์ลงนาม</button>';
+  if(['registrar','admin'].includes(ME.role)&&['submitted','needMoreInfo','returned','approved'].includes(d.status))
+    acts+='<button class="btn gray sm" onclick="assign(\''+no+'\')">👤 มอบหมาย</button>';
+  if(ME.role==='admin'&&d.status!=='closed')
+    acts+='<button class="btn red sm" onclick="cancelReq(\''+no+'\')">✖ ยกเลิก</button>';
+  let dls='';
+  if(d.pdfFileId)dls+='<a href="https://drive.google.com/file/d/'+d.pdfFileId+'/view" target="_blank">📥 PDF</a> ';
+  if(d.docxFileId)dls+='<a href="https://drive.google.com/file/d/'+d.docxFileId+'/view" target="_blank">📄 Word</a> ';
+  if(d.workDocId)dls+='<a href="https://docs.google.com/document/d/'+d.workDocId+'/edit" target="_blank">✏️ ไฟล์งาน</a>';
+  $('detailBox').innerHTML='<div class="card"><button class="btn gray sm" style="margin:0 0 10px" onclick="go(\'reqs\')">← กลับ</button>'+
+    '<h2>'+d.requestNo+' '+badge(d.status)+'</h2>'+
+    '<table style="margin-bottom:10px"><tr><td style="width:180px;color:#64748b">เรื่อง</td><td><b>'+d.subject+'</b></td></tr>'+
+    '<tr><td style="color:#64748b">เรียน</td><td>'+(d.toRecipient||'-')+'</td></tr>'+
+    '<tr><td style="color:#64748b">ผู้ยื่น</td><td>'+d.requesterName+' ('+(d.applicantType||'')+') '+(d.contactEmail||'')+'</td></tr>'+
+    '<tr><td style="color:#64748b">เลขที่หนังสือ</td><td><b>'+(d.docNumber||'ยังไม่จ่ายเลข')+'</b></td></tr>'+
+    (d.body?'<tr><td style="color:#64748b">เนื้อความ</td><td>'+(d.body||'').replace(/\n/g,'<br>')+'</td></tr>':'')+'</table>'+
+    (frows?'<h3>ข้อมูลฟอร์ม</h3><table style="margin-bottom:10px">'+frows+'</table>':'')+
+    (dls?'<p>ดาวน์โหลด: '+dls+'</p>':'')+
+    (acts?'<div style="margin:12px 0">'+acts+'</div>':'')+
+    '<h3>ประวัติ</h3><ul class="tl">'+(h.ok?h.data:[]).map(x=>'<li><b>'+x.action+'</b> — '+x.actor+(x.detail?' | '+x.detail:'')+(x.comment?'<br>💬 '+x.comment:'')+' <small style="color:#64748b">'+x.createdAt+'</small></li>').join('')+'</ul></div>';
+  $('s-detail').style.display='block';
+}
+async function actStatus(no,st){
+  let comment='';
+  if(['needMoreInfo','returned','rejected'].includes(st)){
+    comment=prompt('เหตุผล/ความเห็น (บังคับ):');if(!comment)return;
+  }
+  const r=await api({action:'updateStatus',requestNo:no,status:st,comment:comment});
+  toast(r.message,!!r.ok);if(r.ok)openDetail(no);
+}
+async function issueNo(no){
+  modal('<h2>จ่ายเลขที่หนังสือ: '+no+'</h2><label>ชนิด</label><select id="iSend"><option value="ว">ว (ส่งนอกหน่วยงาน)</option><option value="ล">ล (ภายในหน่วยงาน)</option></select>'+
+    '<label>เลขที่หนังสือ (เว้นว่าง = ระบบรันอัตโนมัติ)</label><input id="iDoc" placeholder="เช่น อว 0109.1/ว 3/68">'+
+    '<div style="margin-top:14px"><button class="btn" onclick="doIssue(\''+no+'\')">จ่ายเลข</button> <button class="btn gray" onclick="closeModal()">ยกเลิก</button></div>');
+}
+async function doIssue(no){
+  const r=await api({action:'issueDocNumber',requestNo:no,sendType:$('iSend').value,docNo:$('iDoc').value.trim()});
+  toast(r.message,!!r.ok);if(r.ok){closeModal();openDetail(no);}
+}
+async function genDoc(no){
+  const sigs=await api({action:'crud',entity:'signatories',op:'list'});
+  let opts='';if(sigs.ok)sigs.data.filter(s=>String(s.active)!=='false').forEach(s=>opts+='<option value="'+s.id+'">'+s.name+' — '+s.position+'</option>');
+  modal('<h2>ออกเอกสาร: '+no+'</h2><label>ผู้ลงนาม</label><select id="gSig">'+opts+'</select>'+
+    '<div style="margin-top:14px"><button class="btn" onclick="doGen(\''+no+'\')">สร้าง PDF + Word</button> <button class="btn gray" onclick="closeModal()">ยกเลิก</button></div>');
+}
+async function doGen(no){
+  const r=await api({action:'generateDocuments',requestNo:no,signatoryId:$('gSig').value});
+  toast(r.message,!!r.ok);if(r.ok){closeModal();openDetail(no);
+    if(r.data.pdfLink)window.open(r.data.pdfLink,'_blank');}
+}
+async function assign(no){const v=prompt('มอบหมายให้ (ชื่อ):');if(!v)return;const r=await api({action:'assign',requestNo:no,responsible:v});toast(r.message,!!r.ok);if(r.ok)openDetail(no);}
+async function cancelReq(no){const v=prompt('เหตุผลการยกเลิก (บังคับ):');if(!v)return;const r=await api({action:'updateStatus',requestNo:no,status:'cancelled',comment:v,reason:v});toast(r.message,!!r.ok);if(r.ok)openDetail(no);}
+async function addFinal(no){
+  const inp=document.createElement('input');inp.type='file';inp.accept='.pdf,.jpg,.jpeg,.png';
+  inp.onchange=async()=>{const f=inp.files[0];if(!f)return;
+    const r=await api({action:'addFinalFile',requestNo:no,name:f.name,mimeType:f.type,dataBase64:await fileB64(f)});
+    toast(r.message,!!r.ok);if(r.ok)openDetail(no);};
+  inp.click();
+}
+/* ---- Generic Table (CRUD) ---- */
+const TBL={
+  docnumbers:{title:'ทะเบียนส่งหนังสือ',cols:['docNumber','subject','recipient','sendType','year','issuedBy','issuedAt','status']},
+  requesttypes:{title:'แบบฟอร์ม',cols:['id','name','applicantTypes','docTemplateId','slaDays','active'],form:[
+    {k:'name',l:'ชื่อแบบฟอร์ม'},{k:'applicantTypes',l:'กลุ่มผู้ยื่น',t:'select',o:['student','staff','public']},
+    {k:'docTemplateId',l:'เทมเพลต ID (เช่น TPL-MEMO-MSU)'},{k:'approvalPath',l:'เส้นทางอนุมัติ (เช่น deptHead,registrar)'},
+    {k:'slaDays',l:'SLA (วัน)',t:'number'},{k:'formFields',l:'ฟิลด์ (Field Builder)',t:'builder'}]},
+  doctemplates:{title:'เทมเพลตเอกสาร',cols:['id','name','docsId','emblemPosition','emblemSizeCm','active'],form:[
+    {k:'name',l:'ชื่อเทมเพลต'},{k:'docsId',l:'Google Docs ID'},{k:'unitScope',l:'unitScope (*)'},
+    {k:'emblemPosition',l:'ตำแหน่งตรา',t:'select',o:['center','left','right']},{k:'emblemSizeCm',l:'ขนาดตรา (ซม.)'}],
+    rowBtns:r=>'<a class="btn gray sm" target="_blank" href="https://docs.google.com/document/d/'+r.docsId+'/edit">เปิดแก้</a>'},
+  signatories:{title:'ผู้ลงนาม',cols:['name','position','unitId','signatureFileId','active'],form:[
+    {k:'unitId',l:'unitId (U-FEDU/U-ETC)'},{k:'name',l:'ชื่อ-นามสกุล'},{k:'position',l:'ตำแหน่งท้ายหนังสือ'},{k:'signatureFileId',l:'ลายเซ็น fileId'}],
+    rowBtns:r=>'<button class="btn gray sm" onclick="uploadSig(\''+r.id+'\')">อัปโหลดลายเซ็น</button>'},
+  units:{title:'หน่วยงาน',cols:['unitId','shortName','level','namePrefix','numberPrefix','status'],form:[
+    {k:'unitId',l:'unitId'},{k:'shortName',l:'ชื่อย่อ'},{k:'letterLine1',l:'หัวกระดาษบรรทัด 1'},{k:'letterLine2',l:'บรรทัด 2'},{k:'letterLine3',l:'บรรทัด 3 (ภาควิชา)'},
+    {k:'level',l:'ระดับ',t:'select',o:['faculty','department']},{k:'parentUnitId',l:'หน่วยแม่'},
+    {k:'namePrefix',l:'คำนำหน้า (อว)'},{k:'numberPrefix',l:'เลขทะเบียนส่ง'},{k:'status',l:'สถานะ',t:'select',o:['ใช้งาน','ปิดใช้งาน']}]},
+  users:{title:'ผู้ใช้',cols:['email','name','position','unitId','role','status'],form:[
+    {k:'email',l:'อีเมล'},{k:'name',l:'ชื่อ-นามสกุล'},{k:'position',l:'ตำแหน่ง'},{k:'unitId',l:'unitId'},
+    {k:'role',l:'บทบาท',t:'select',o:['admin','registrar','deptHead','dean','staff','member']},{k:'status',l:'สถานะ',t:'select',o:['ใช้งาน','ปิดใช้งาน']}]},
+  auditlog:{title:'Audit Log (อ่านอย่างเดียว)',cols:['createdAt','actor','action','entity','entityId','detail','reason']}
+};
+async function loadTable(entity){
+  const cfg=TBL[entity];$('tblTitle').textContent=cfg.title;
+  let extra='';
+  if(entity!=='auditlog')extra='<button class="btn sm" onclick="editRow(\''+entity+'\',null)">+ เพิ่มรายการ</button>';
+  $('tblExtra').innerHTML=extra;
+  const r=await api({action:'crud',entity:entity,op:'list'});
+  if(!r.ok){$('tblBox').innerHTML=r.message;return;}
+  let h='<table><tr>'+cfg.cols.map(c=>'<th>'+c+'</th>').join('')+(entity!=='auditlog'?'<th>จัดการ</th>':'')+'</tr>';
+  r.data.forEach(row=>{
+    h+='<tr>'+cfg.cols.map(c=>'<td>'+String(row[c]===undefined?'':row[c]).slice(0,60)+'</td>').join('');
+    if(entity!=='auditlog'){
+      h+='<td>'+(cfg.rowBtns?cfg.rowBtns(row):'')+
+        '<button class="btn sm" onclick=\'editRow("'+entity+'",'+JSON.stringify(JSON.stringify(row))+')\'>แก้ไข</button>';
+      if(['units','requesttypes','signatories'].includes(entity))
+        h+='<button class="btn gold sm" onclick="toggleRow(\''+entity+'\',\''+(row.id||row.unitId)+'\',\''+row.status+'\')">'+(row.status==='ปิดใช้งาน'||row.active==='false'?'เปิด':'ปิด')+'</button>';
+      h+='</td>';
+    }
+    h+='</tr>';
+  });
+  $('tblBox').innerHTML=h+'</table>';
+}
+function editRow(entity,jsonStr){
+  const cfg=TBL[entity],row=jsonStr?JSON.parse(JSON.parse(jsonStr)):{};const isEdit=!!(row.id||row.unitId||row.requestNo||row.email);
+  let h='<h2>'+(isEdit?'แก้ไข':'เพิ่ม')+' — '+cfg.title+'</h2>';
+  cfg.form.forEach(f=>{
+    h+='<label>'+f.l+'</label>';
+    const v=row[f.k]!==undefined?row[f.k]:'';
+    if(f.t==='select'){h+='<select id="e_'+f.k+'">'+f.o.map(o=>'<option '+(o===v?'selected':'')+'>'+o+'</option>').join('')+'</select>';}
+    else if(f.t==='builder'){h+='<textarea id="e_'+f.k+'" style="min-height:130px;font-family:monospace;font-size:12.5px">'+(v?JSON.stringify(typeof v==='string'?JSON.parse(v):v,null,1):'')+'</textarea><small style="color:#64748b">ตัวอย่าง: [{"key":"fullName","label":"ชื่อ-นามสกุล","type":"text","required":true}] — type: text|number|date|select|textarea (select ใส่ options:["a","b"])</small>';}
+    else{h+='<input id="e_'+f.k+'" value="'+String(v).replace(/"/g,'&quot;')+'">';}
+  });
+  h+='<div style="margin-top:14px"><button class="btn" onclick="saveRow(\''+entity+'\',\''+(isEdit?(row.id||row.unitId||row.email):'')+'\')">บันทึก</button> <button class="btn gray" onclick="closeModal()">ปิด</button></div><div id="eMsg" class="err"></div>';
+  modal(h);
+}
+async function saveRow(entity,idVal){
+  const cfg=TBL[entity],data={};
+  cfg.form.forEach(f=>{const el=$('e_'+f.k);data[f.k]=el.value;});
+  if(data.formFields){try{JSON.parse(data.formFields);}catch(e){$('eMsg').textContent='formFields ไม่ใช่ JSON ที่ถูกต้อง';return;}}
+  const r=await api({action:'crud',entity:entity,op:idVal?'update':'create',data: idVal?Object.assign({},data,{id:idVal,unitId:idVal||data.unitId}):data});
+  if(!r.ok&&!idVal&&entity==='users'){}
+  toast(r.message+(r.data&&r.data.tempPassword?' | รหัสชั่วคราว: '+r.data.tempPassword:''),!!r.ok);
+  if(r.ok){closeModal();loadTable(entity);}
+}
+async function toggleRow(entity,id,cur){
+  const r=await api({action:'crud',entity:entity,op:'delete',data:{id:id}});
+  toast(r.message,!!r.ok);loadTable(entity);
+}
+async function uploadSig(sigId){
+  const inp=document.createElement('input');inp.type='file';inp.accept='.png';
+  inp.onchange=async()=>{const f=inp.files[0];if(!f)return;
+    const up=await api({action:'uploadAsset',assetKey:'SIG-'+Date.now(),name:f.name,mimeType:f.type,dataBase64:await fileB64(f)});
+    if(!up.ok){toast(up.message,false);return;}
+    const r=await api({action:'crud',entity:'signatories',op:'update',data:{id:sigId,signatureFileId:up.data.fileId}});
+    toast(r.message,!!r.ok);loadTable('signatories');};
+  inp.click();
+}
+/* ---- Settings ---- */
+async function loadSettings(){
+  const r=await api({action:'getSettings'});
+  if(!r.ok){$('setBox').innerHTML=r.message;return;}
+  const s=r.data;const inp=(k,l)=>'<label>'+l+'</label><input id="st_'+k+'" value="'+String(s[k]||'').replace(/"/g,'&quot;')+'">';
+  const sel=(k,l,opts)=>'<label>'+l+'</label><select id="st_'+k+'">'+opts.map(o=>'<option '+(s[k]===o?'selected':'')+'>'+o+'</option>').join('')+'</select>';
+  let pol={staff:'login',student:'open',public:'register'};try{pol=JSON.parse(s.accessPolicy||'{}');}catch(e){}
+  const polSel=(g,l)=>'<label>'+l+'</label><select id="pol_'+g+'">'+['open','login','register'].map(m=>'<option value="'+m+'" '+(pol[g]===m?'selected':'')+'>'+{open:'ใช้งานทันที (ไม่ต้องบัญชี)',login:'ต้องเข้าสู่ระบบ',register:'สมัครสมาชิก + OTP'}[m]+'</option>').join('')+'</select>';
+  $('setBox').innerHTML='<h2>ตั้งค่าระบบ</h2>'+
+    inp('siteName','ชื่อระบบ')+inp('universityName','ชื่อมหาวิทยาลัย')+inp('termStudent','คำเรียกผู้เรียน')+inp('notifyEmail','อีเมลรับแจ้งเตือนสารบรรณ')+
+    sel('enableWordExport','ส่งออก Word',['true','false'])+
+    '<h3 style="margin-top:16px">นโยบายการเข้าถึง</h3>'+polSel('staff','บุคลากร')+polSel('student','นิสิต')+polSel('public','บุคคลภายนอก')+
+    inp('registerEmailDomains','Whitelist โดเมนอีเมลสมัครสมาชิก (คั่น , เว้นว่าง=ทุกโดเมน)')+
+    '<h3 style="margin-top:16px">ตราครุฑและโลโก้</h3>'+
+    '<label>อัปโหลดตราครุฑ (PNG โปร่งใส ≤2MB)</label><input type="file" id="emFile" accept=".png,.jpg" style="padding:6px">'+
+    '<button class="btn gold sm" onclick="uploadEmblem()">อัปโหลดตราครุฑ</button> '+
+    '<button class="btn sm" onclick="testEmblem()">🧪 ทดสอบออกเอกสารตัวอย่าง</button>'+
+    sel('emblemPosition','ตำแหน่งตรา (global)',['center','left','right'])+inp('emblemSizeCm','ขนาดตรา (ซม.)')+
+    inp('webLogoFileId','โลโก้เว็บ fileId (ผ่านปุ่มอัปโหลดด้านบนใช้ค่าเดียวกันได้)')+
+    '<button class="btn" onclick="saveSettings()">💾 บันทึกการตั้งค่าทั้งหมด</button>';
+}
+async function uploadEmblem(){
+  const f=$('emFile').files[0];if(!f){toast('เลือกไฟล์ก่อน',false);return;}
+  const r=await api({action:'uploadAsset',assetKey:'emblemFileId',name:f.name,mimeType:f.type,dataBase64:await fileB64(f)});
+  toast(r.message,!!r.ok);
+}
+async function testEmblem(){
+  const r=await api({action:'testEmblem'});
+  toast(r.message,!!r.ok);
+  if(r.ok&&r.data){window.open(r.data.pdf,'_blank');if(r.data.word)window.open(r.data.word,'_blank');}
+}
+async function saveSettings(){
+  const data={siteName:$('st_siteName').value,universityName:$('st_universityName').value,termStudent:$('st_termStudent').value,
+    notifyEmail:$('st_notifyEmail').value,enableWordExport:$('st_enableWordExport').value,
+    emblemPosition:$('st_emblemPosition').value,emblemSizeCm:$('st_emblemSizeCm').value,
+    registerEmailDomains:$('st_registerEmailDomains').value,
+    accessPolicy:JSON.stringify({staff:$('pol_staff').value,student:$('pol_student').value,public:$('pol_public').value})};
+  const r=await api({action:'setSettings',data:data});
+  toast(r.message,!!r.ok);
+}
+if(TOKEN){/* ตรวจ token เดิม: ลองยิง dashboardStats */}
+if(TOKEN)api({action:'dashboardStats'}).then(r=>{if(r.ok){ME={name:'ผู้ใช้',role:r.data.role||'admin'};enterApp();}else{TOKEN='';localStorage.removeItem('atok');}});
+</script>
+</body>
+</html>
